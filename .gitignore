@@ -1,0 +1,36 @@
+# Игнорировать папку .venv (Python virtual environment)
+.venv/
+
+# Дополнительные полезные правила для Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.json
+*.csv
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Файлы окружения
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+#

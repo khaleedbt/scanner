@@ -1,0 +1,6 @@
+range:
+  scan_range: 1.232.49.0/24
+  country: US
+
+user_agents:
+  agents: ""
