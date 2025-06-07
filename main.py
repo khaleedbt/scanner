@@ -42,9 +42,12 @@ def check_url(url, headers):
         pass
     return None, None
 
-def scan_ip(ip):
+def scan_ip(ip, agents=None):
+    if agents is None:
+        agents = USER_AGENTS
+
     results = []
-    headers = {"User-Agent": random.choice(USER_AGENTS)}
+    headers = {"User-Agent": random.choice(agents)}
 
     url_http = f"http://{ip}"
     code, latency = check_url(url_http, headers)
@@ -83,8 +86,7 @@ def main():
     csv_file = f"{filename_id}.csv"
     json_file = f"{filename_id}.json"
 
-    # Подготовка файлов
-    json_log = []
+    # Создание файлов для результатов
 
     with open(csv_file, "w", newline="") as f_csv, open(json_file, "w") as f_json:
         csv_writer = csv.DictWriter(f_csv, fieldnames=["ip", "port", "protocol", "code", "latency_ms"])
@@ -95,7 +97,7 @@ def main():
 
         for ip in network.hosts():
             print(f"[ ] Проверка IP: {ip}")
-            results = scan_ip(str(ip))
+            results = scan_ip(str(ip), USER_AGENTS)
 
             for entry in results:
                 # CSV — запись строки
