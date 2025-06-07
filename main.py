@@ -19,18 +19,17 @@ USER_AGENTS = [
 ]
 
 def load_settings():
+    """Load configuration and override defaults if applicable."""
     with open("settings.yaml", "r") as f:
-        data = yaml.safe_load(f)
+        config = yaml.safe_load(f)
 
-    agents = data.get("user_agents", {}).get("agents")
-    if isinstance(agents, str):
-        agents = [a.strip() for a in agents.splitlines() if a.strip()]
-
-    if agents:
+    # Allow overriding USER_AGENTS from the settings file
+    agents = config.get("user_agents", {}).get("agents")
+    if isinstance(agents, list) and agents:
         global USER_AGENTS
         USER_AGENTS = agents
 
-    return data
+    return config
 
 def check_url(url, headers):
     try:
