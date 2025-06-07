@@ -79,7 +79,6 @@ def scan_ip(ip, agents=None):
 def main():
     config = load_settings()
     cidr = config["range"]["scan_range"]
-    country = config["range"]["country"]
 
     # Allow CIDR ranges that are not aligned to network boundaries
     network = ip_network(cidr, strict=False)
