@@ -5,6 +5,7 @@ import yaml
 import uuid
 import json
 import csv
+import os
 from ipaddress import ip_network
 from urllib3.exceptions import InsecureRequestWarning
 import urllib3
@@ -83,8 +84,10 @@ def main():
     network = ip_network(cidr)
 
     filename_id = uuid.uuid4().hex[:8]
-    csv_file = f"{filename_id}.csv"
-    json_file = f"{filename_id}.json"
+    output_dir = "results"
+    os.makedirs(output_dir, exist_ok=True)
+    csv_file = os.path.join(output_dir, f"{filename_id}.csv")
+    json_file = os.path.join(output_dir, f"{filename_id}.json")
 
     # Создание файлов для результатов
 
