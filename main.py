@@ -20,7 +20,17 @@ USER_AGENTS = [
 
 def load_settings():
     with open("settings.yaml", "r") as f:
-        return yaml.safe_load(f)
+        data = yaml.safe_load(f)
+
+    agents = data.get("user_agents", {}).get("agents")
+    if isinstance(agents, str):
+        agents = [a.strip() for a in agents.splitlines() if a.strip()]
+
+    if agents:
+        global USER_AGENTS
+        USER_AGENTS = agents
+
+    return data
 
 def check_url(url, headers):
     try:
@@ -33,9 +43,12 @@ def check_url(url, headers):
         pass
     return None, None
 
-def scan_ip(ip):
+def scan_ip(ip, agents=None):
+    if agents is None:
+        agents = USER_AGENTS
+
     results = []
-    headers = {"User-Agent": random.choice(USER_AGENTS)}
+    headers = {"User-Agent": random.choice(agents)}
 
     url_http = f"http://{ip}"
     code, latency = check_url(url_http, headers)
@@ -86,7 +99,7 @@ def main():
 
         for ip in network.hosts():
             print(f"[ ] Проверка IP: {ip}")
-            results = scan_ip(str(ip))
+            results = scan_ip(str(ip), USER_AGENTS)
 
             for entry in results:
                 # CSV — запись строки
