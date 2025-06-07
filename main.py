@@ -99,23 +99,26 @@ def main():
         f_json.write("[\n")  # JSON-массив открывается
         first = True
 
-        for ip in network.hosts():
-            print(f"[ ] Проверка IP: {ip}")
-            results = scan_ip(str(ip), USER_AGENTS)
+        try:
+            for ip in network.hosts():
+                print(f"[ ] Проверка IP: {ip}")
+                results = scan_ip(str(ip), USER_AGENTS)
 
-            for entry in results:
-                # CSV — запись строки
-                csv_writer.writerow(entry)
+                for entry in results:
+                    # CSV — запись строки
+                    csv_writer.writerow(entry)
 
-                # JSON — построчная запись объектов
-                if not first:
-                    f_json.write(",\n")
-                f_json.write(json.dumps(entry, indent=2))
-                first = False
+                    # JSON — построчная запись объектов
+                    if not first:
+                        f_json.write(",\n")
+                    f_json.write(json.dumps(entry, indent=2))
+                    first = False
 
-            time.sleep(1)
-
-        f_json.write("\n]\n")  # Закрываем JSON-массив
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("Сканирование прервано пользователем")
+        finally:
+            f_json.write("\n]\n")  # Закрываем JSON-массив
 
     print(f"[✓] CSV сохранён в {csv_file}")
     print(f"[✓] JSON сохранён в {json_file}")
