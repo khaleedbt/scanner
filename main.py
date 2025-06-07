@@ -81,7 +81,8 @@ def main():
     cidr = config["range"]["scan_range"]
     country = config["range"]["country"]
 
-    network = ip_network(cidr)
+    # Allow CIDR ranges that are not aligned to network boundaries
+    network = ip_network(cidr, strict=False)
 
     filename_id = uuid.uuid4().hex[:8]
     output_dir = "results"
