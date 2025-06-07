@@ -43,37 +43,41 @@ def check_url(url, headers):
     return None, None
 
 def scan_ip(ip, agents=None):
+    """Return combined HTTP/HTTPS results for a single IP."""
     if agents is None:
         agents = USER_AGENTS
 
-    results = []
     headers = {"User-Agent": random.choice(agents)}
+    http_info = None
+    https_info = None
 
     url_http = f"http://{ip}"
     code, latency = check_url(url_http, headers)
     if code:
         print(f"[+] HTTP ответ от {ip}: {code} ({latency}ms)")
-        results.append({
-            "ip": ip,
+        http_info = {
             "port": 80,
-            "protocol": "http",
             "code": code,
-            "latency_ms": latency
-        })
+            "latency_ms": latency,
+        }
 
     url_https = f"https://{ip}"
     code, latency = check_url(url_https, headers)
     if code:
         print(f"[+] HTTPS ответ от {ip}: {code} ({latency}ms)")
-        results.append({
-            "ip": ip,
+        https_info = {
             "port": 443,
-            "protocol": "https",
             "code": code,
-            "latency_ms": latency
-        })
+            "latency_ms": latency,
+        }
 
-    return results
+    if http_info or https_info:
+        return {
+            "ip": ip,
+            "http": http_info,
+            "https": https_info,
+        }
+    return None
 
 def main():
     config = load_settings()
@@ -93,7 +97,16 @@ def main():
     # Создание файлов для результатов
 
     with open(csv_file, "w", newline="") as f_csv, open(json_file, "w") as f_json:
-        csv_writer = csv.DictWriter(f_csv, fieldnames=["ip", "port", "protocol", "code", "latency_ms"])
+        csv_writer = csv.DictWriter(
+            f_csv,
+            fieldnames=[
+                "ip",
+                "http_code",
+                "http_latency_ms",
+                "https_code",
+                "https_latency_ms",
+            ],
+        )
         csv_writer.writeheader()
 
         f_json.write("[\n")  # JSON-массив открывается
@@ -102,13 +115,17 @@ def main():
         try:
             for ip in network.hosts():
                 print(f"[ ] Проверка IP: {ip}")
-                results = scan_ip(str(ip), USER_AGENTS)
+                entry = scan_ip(str(ip), USER_AGENTS)
 
-                for entry in results:
-                    # CSV — запись строки
-                    csv_writer.writerow(entry)
+                if entry:
+                    csv_writer.writerow({
+                        "ip": entry["ip"],
+                        "http_code": entry.get("http", {}).get("code", ""),
+                        "http_latency_ms": entry.get("http", {}).get("latency_ms", ""),
+                        "https_code": entry.get("https", {}).get("code", ""),
+                        "https_latency_ms": entry.get("https", {}).get("latency_ms", ""),
+                    })
 
-                    # JSON — построчная запись объектов
                     if not first:
                         f_json.write(",\n")
                     f_json.write(json.dumps(entry, indent=2))
