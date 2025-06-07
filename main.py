@@ -2,7 +2,6 @@ import requests
 import time
 import random
 import yaml
-import uuid
 import json
 import csv
 import os
@@ -79,11 +78,13 @@ def scan_ip(ip, agents=None):
 def main():
     config = load_settings()
     cidr = config["range"]["scan_range"]
+    country = config["range"].get("country_code", "XX").upper()
 
     # Allow CIDR ranges that are not aligned to network boundaries
     network = ip_network(cidr, strict=False)
 
-    filename_id = uuid.uuid4().hex[:8]
+    ip_base = cidr.split("/")[0].replace(".", "_")
+    filename_id = f"{ip_base}_{country}"
     output_dir = "results"
     os.makedirs(output_dir, exist_ok=True)
     csv_file = os.path.join(output_dir, f"{filename_id}.csv")
