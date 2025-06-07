@@ -5,7 +5,7 @@ import yaml
 import json
 import csv
 import os
-from ipaddress import ip_network
+from ipaddress import ip_network, ip_address
 from urllib3.exceptions import InsecureRequestWarning
 import urllib3
 
@@ -41,6 +41,23 @@ def check_url(url, headers):
     except requests.RequestException:
         pass
     return None, None
+
+def parse_scan_range(range_str):
+    """Return an iterable of IP addresses from a CIDR or start-end string."""
+    range_str = range_str.strip()
+    if "/" in range_str:
+        network = ip_network(range_str, strict=False)
+        return network.hosts()
+    parts = range_str.split()
+    if len(parts) != 2:
+        raise ValueError(
+            "scan_range must be CIDR or two space-separated IPs"
+        )
+    start_ip = ip_address(parts[0])
+    end_ip = ip_address(parts[1])
+    if int(start_ip) > int(end_ip):
+        start_ip, end_ip = end_ip, start_ip
+    return (ip_address(ip) for ip in range(int(start_ip), int(end_ip) + 1))
 
 def scan_ip(ip, agents=None):
     """Return combined HTTP/HTTPS results for a single IP."""
@@ -81,13 +98,14 @@ def scan_ip(ip, agents=None):
 
 def main():
     config = load_settings()
-    cidr = config["range"]["scan_range"]
+    scan_range = config["range"]["scan_range"]
     country = config["range"].get("country_code", "XX").upper()
 
-    # Allow CIDR ranges that are not aligned to network boundaries
-    network = ip_network(cidr, strict=False)
+    # Iterate over either CIDR or explicit start/end IPs
+    ip_iter = parse_scan_range(scan_range)
 
-    ip_base = cidr.split("/")[0].replace(".", "_")
+    # Base name uses the starting IP of the range
+    ip_base = scan_range.split()[0].split("/")[0].replace(".", "_")
     filename_id = f"{ip_base}_{country}"
     output_dir = "results"
     os.makedirs(output_dir, exist_ok=True)
@@ -113,7 +131,7 @@ def main():
         first = True
 
         try:
-            for ip in network.hosts():
+            for ip in ip_iter:
                 print(f"[ ] Проверка IP: {ip}")
                 entry = scan_ip(str(ip), USER_AGENTS)
 
