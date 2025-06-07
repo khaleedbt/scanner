@@ -120,10 +120,10 @@ def main():
                 if entry:
                     csv_writer.writerow({
                         "ip": entry["ip"],
-                        "http_code": entry.get("http", {}).get("code", ""),
-                        "http_latency_ms": entry.get("http", {}).get("latency_ms", ""),
-                        "https_code": entry.get("https", {}).get("code", ""),
-                        "https_latency_ms": entry.get("https", {}).get("latency_ms", ""),
+                        "http_code": (entry.get("http") or {}).get("code", ""),
+                        "http_latency_ms": (entry.get("http") or {}).get("latency_ms", ""),
+                        "https_code": (entry.get("https") or {}).get("code", ""),
+                        "https_latency_ms": (entry.get("https") or {}).get("latency_ms", ""),
                     })
 
                     if not first:
