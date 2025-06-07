@@ -74,8 +74,7 @@ def main():
     csv_file = f"{filename_id}.csv"
     json_file = f"{filename_id}.json"
 
-    # Подготовка файлов
-    json_log = []
+    # Создание файлов для результатов
 
     with open(csv_file, "w", newline="") as f_csv, open(json_file, "w") as f_json:
         csv_writer = csv.DictWriter(f_csv, fieldnames=["ip", "port", "protocol", "code", "latency_ms"])
