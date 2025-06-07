@@ -20,7 +20,21 @@ USER_AGENTS = [
 
 def load_settings():
     """Load configuration and override defaults if applicable."""
-    with open("settings.yaml", "r") as f:
+    config_path = "settings.yaml"
+    if not os.path.exists(config_path):
+        example_path = "settings.example.yaml"
+        if os.path.exists(example_path):
+            print(
+                f"[!] {config_path} not found, using {example_path}. "
+                "Create settings.yaml to override defaults."
+            )
+            config_path = example_path
+        else:
+            raise FileNotFoundError(
+                f"{config_path} not found. Please create it or copy from {example_path}."
+            )
+
+    with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
     # Allow overriding USER_AGENTS from the settings file
