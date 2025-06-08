@@ -9,6 +9,7 @@
    pip install -r requirements.txt
    ```
 2. Copy `settings.example.yaml` to `settings.yaml` and adjust the values to your environment.
+3. Define the list of user agents in `settings.yaml` under `user_agents.agents`.
 
 ### scan_ranges examples
 - CIDR notation:

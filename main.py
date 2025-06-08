@@ -11,12 +11,8 @@ import urllib3
 
 urllib3.disable_warnings(InsecureRequestWarning)
 
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0)",
-    "Mozilla/5.0 (X11; Linux x86_64)",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-    "curl/7.68.0"
-]
+# Placeholder populated from settings.yaml
+USER_AGENTS = []
 
 def load_settings():
     """Load configuration and override defaults if applicable."""
@@ -37,11 +33,13 @@ def load_settings():
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    # Allow overriding USER_AGENTS from the settings file
+    # Load mandatory USER_AGENTS from the settings file
     agents = config.get("user_agents", {}).get("agents")
-    if isinstance(agents, list) and agents:
-        global USER_AGENTS
-        USER_AGENTS = agents
+    if not isinstance(agents, list) or not agents:
+        raise ValueError("No user agents were configured in settings.yaml")
+
+    global USER_AGENTS
+    USER_AGENTS = agents
 
     return config
 
@@ -118,7 +116,7 @@ def run_scan_for_range(scan_range: str, country: str):
         try:
             for ip in ip_iter:
                 print(f"[ ] Проверка IP: {ip}")
-                entry = scan_ip(str(ip), USER_AGENTS)
+                entry = scan_ip(str(ip))
 
                 if entry:
                     # Формируем запись для CSV, совместимую с обоими форматами
@@ -150,12 +148,10 @@ def run_scan_for_range(scan_range: str, country: str):
     print(f"[✓] CSV сохранён в {csv_file}")
     print(f"[✓] JSON сохранён в {json_file}")
 
-def scan_ip(ip, agents=None):
+def scan_ip(ip):
     """Return combined HTTP/HTTPS results with headers and error info."""
-    if agents is None:
-        agents = USER_AGENTS
 
-    headers = {"User-Agent": random.choice(agents)}
+    headers = {"User-Agent": random.choice(USER_AGENTS)}
     http_info = None
     https_info = None
     http_error = None
