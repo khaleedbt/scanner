@@ -51,16 +51,16 @@ def check_url(url, headers):
         r = requests.get(url, headers=headers, timeout=3, verify=False)
         elapsed = int((time.time() - start) * 1000)  # ms
         if r.status_code < 500:
-            return r.status_code, elapsed, r.headers  # Возвращаем статус, время И заголовки
+            return r.status_code, elapsed, r.headers
     except requests.exceptions.Timeout:
-        return "timeout", None, None  # Добавляем третий None для consistency
+        return "timeout", None, {}  # Пустой словарь вместо None
     except requests.exceptions.SSLError:
-        return "ssl_error", None, None
+        return "ssl_error", None, {}
     except requests.exceptions.TooManyRedirects:
-        return "redirect_loop", None, None
+        return "redirect_loop", None, {}
     except requests.RequestException:
         pass
-    return None, None, None  # Все возвращаемые кортежи теперь содержат 3 элемента
+    return None, None, {}  # Всегда возвращаем словарь для заголовков
 
 def parse_scan_range(range_str):
     """Return an iterable of IP addresses from a CIDR or start-end string."""
@@ -80,7 +80,7 @@ def parse_scan_range(range_str):
     return (ip_address(ip) for ip in range(int(start_ip), int(end_ip) + 1))
 
 def scan_ip(ip, agents=None):
-    """Return combined HTTP/HTTPS results for a single IP."""
+    """Return combined HTTP/HTTPS results with headers and error info."""
     if agents is None:
         agents = USER_AGENTS
 
@@ -89,43 +89,58 @@ def scan_ip(ip, agents=None):
     https_info = None
     http_error = None
     https_error = None
+    ports = []
+    server_header = None
+    powered_by_header = None
 
+    # Проверка HTTP
     url_http = f"http://{ip}"
-    code, latency, _ = check_url(url_http, headers)  # Распаковываем 3 значения
-    if isinstance(code, int):  # Сохраняем явную проверку типа для надёжности
+    code, latency, resp_headers = check_url(url_http, headers)
+    if isinstance(code, int):
         print(f"[+] HTTP ответ от {ip}: {code} ({latency}ms)")
+        ports.append(80)
         http_info = {
             "port": 80,
             "code": code,
             "latency_ms": latency,
+            "headers": resp_headers
         }
-    elif code:  # Для строковых ошибок ("timeout" и т.д.)
+        server_header = resp_headers.get("Server")
+        powered_by_header = resp_headers.get("X-Powered-By")
+    elif code:
         print(f"[!] HTTP ошибка для {ip}: {code}")
         http_error = code
 
+    # Проверка HTTPS
     url_https = f"https://{ip}"
-    code, latency, _ = check_url(url_https, headers)
+    code, latency, resp_headers = check_url(url_https, headers)
     if isinstance(code, int):
         print(f"[+] HTTPS ответ от {ip}: {code} ({latency}ms)")
+        ports.append(443)
         https_info = {
             "port": 443,
             "code": code,
             "latency_ms": latency,
+            "headers": resp_headers
         }
+        server_header = server_header or resp_headers.get("Server")
+        powered_by_header = powered_by_header or resp_headers.get("X-Powered-By")
     elif code:
         print(f"[!] HTTPS ошибка для {ip}: {code}")
         https_error = code
 
-    if http_info or https_info or http_error or https_error:
+    if ports or http_error or https_error:
         return {
             "ip": ip,
+            "ports": ports,
+            "server": server_header,
+            "powered_by": powered_by_header,
             "http": http_info,
             "https": https_info,
             "http_error": http_error,
             "https_error": https_error,
         }
     return None
-
 def main():
     config = load_settings()
     scan_range = config["range"]["scan_range"]
@@ -143,12 +158,14 @@ def main():
     json_file = os.path.join(output_dir, f"{filename_id}.json")
 
     # Создание файлов для результатов
-
     with open(csv_file, "w", newline="") as f_csv, open(json_file, "w") as f_json:
         csv_writer = csv.DictWriter(
             f_csv,
             fieldnames=[
                 "ip",
+                "ports",
+                "server",
+                "powered_by",
                 "http_code",
                 "http_latency_ms",
                 "https_code",
@@ -168,15 +185,20 @@ def main():
                 entry = scan_ip(str(ip), USER_AGENTS)
 
                 if entry:
-                    csv_writer.writerow({
+                    # Формируем запись для CSV, совместимую с обоими форматами
+                    csv_entry = {
                         "ip": entry["ip"],
+                        "ports": ",".join(map(str, entry.get("ports", [])) if entry.get("ports") else "",
+                        "server": entry.get("server", ""),
+                        "powered_by": entry.get("powered_by", ""),
                         "http_code": (entry.get("http") or {}).get("code", ""),
                         "http_latency_ms": (entry.get("http") or {}).get("latency_ms", ""),
                         "https_code": (entry.get("https") or {}).get("code", ""),
                         "https_latency_ms": (entry.get("https") or {}).get("latency_ms", ""),
                         "http_error": entry.get("http_error", ""),
                         "https_error": entry.get("https_error", ""),
-                    })
+                    }
+                    csv_writer.writerow(csv_entry)
 
                     if not first:
                         f_json.write(",\n")
