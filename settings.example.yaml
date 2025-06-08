@@ -1,5 +1,7 @@
 range:
-  scan_range: 1.232.49.0/24
+  scan_ranges:
+    - 1.232.49.0/24
+  # - "2.16.37.0 2.16.37.255"  # Example of start/end format
   country_code: US
 
 user_agents:
