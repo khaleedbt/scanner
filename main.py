@@ -51,10 +51,10 @@ def check_url(url, headers):
         r = requests.get(url, headers=headers, timeout=3, verify=False)
         elapsed = int((time.time() - start) * 1000)  # ms
         if r.status_code < 500:
-            return r.status_code, elapsed
+            return r.status_code, elapsed, r.headers
     except requests.RequestException:
         pass
-    return None, None
+    return None, None, None
 
 def parse_scan_range(range_str):
     """Return an iterable of IP addresses from a CIDR or start-end string."""
@@ -83,7 +83,7 @@ def scan_ip(ip, agents=None):
     https_info = None
 
     url_http = f"http://{ip}"
-    code, latency = check_url(url_http, headers)
+    code, latency, _ = check_url(url_http, headers)
     if code:
         print(f"[+] HTTP ответ от {ip}: {code} ({latency}ms)")
         http_info = {
@@ -93,7 +93,7 @@ def scan_ip(ip, agents=None):
         }
 
     url_https = f"https://{ip}"
-    code, latency = check_url(url_https, headers)
+    code, latency, _ = check_url(url_https, headers)
     if code:
         print(f"[+] HTTPS ответ от {ip}: {code} ({latency}ms)")
         https_info = {
