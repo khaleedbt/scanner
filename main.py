@@ -131,7 +131,7 @@ def scan_ip(ip, agents=None):
         print(f"[!] HTTPS ошибка для {ip}: {code}")
         https_error = code
 
-    if ports or http_error or https_error:
+    if ports:
         return {
             "ip": ip,
             "ports": ports,
