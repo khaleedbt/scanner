@@ -51,10 +51,10 @@ def check_url(url, headers):
         r = requests.get(url, headers=headers, timeout=3, verify=False)
         elapsed = int((time.time() - start) * 1000)  # ms
         if r.status_code < 500:
-            return r.status_code, elapsed
+            return r.status_code, elapsed, r.headers
     except requests.RequestException:
         pass
-    return None, None
+    return None, None, {}
 
 def parse_scan_range(range_str):
     """Return an iterable of IP addresses from a CIDR or start-end string."""
@@ -74,39 +74,41 @@ def parse_scan_range(range_str):
     return (ip_address(ip) for ip in range(int(start_ip), int(end_ip) + 1))
 
 def scan_ip(ip, agents=None):
-    """Return combined HTTP/HTTPS results for a single IP."""
+    """Return headers and open ports for a single IP."""
     if agents is None:
         agents = USER_AGENTS
 
     headers = {"User-Agent": random.choice(agents)}
-    http_info = None
-    https_info = None
+
+    http_headers = {}
+    https_headers = {}
+    ports = []
 
     url_http = f"http://{ip}"
-    code, latency = check_url(url_http, headers)
+    code, latency, resp_headers = check_url(url_http, headers)
     if code:
         print(f"[+] HTTP ответ от {ip}: {code} ({latency}ms)")
-        http_info = {
-            "port": 80,
-            "code": code,
-            "latency_ms": latency,
-        }
+        ports.append(80)
+        http_headers = resp_headers
 
     url_https = f"https://{ip}"
-    code, latency = check_url(url_https, headers)
+    code, latency, resp_headers = check_url(url_https, headers)
     if code:
         print(f"[+] HTTPS ответ от {ip}: {code} ({latency}ms)")
-        https_info = {
-            "port": 443,
-            "code": code,
-            "latency_ms": latency,
-        }
+        ports.append(443)
+        https_headers = resp_headers
 
-    if http_info or https_info:
+    if ports:
+        server_header = https_headers.get("Server") or http_headers.get("Server")
+        powered_by_header = (
+            https_headers.get("X-Powered-By")
+            or http_headers.get("X-Powered-By")
+        )
         return {
             "ip": ip,
-            "http": http_info,
-            "https": https_info,
+            "ports": ports,
+            "server": server_header,
+            "powered_by": powered_by_header,
         }
     return None
 
@@ -131,13 +133,7 @@ def main():
     with open(csv_file, "w", newline="") as f_csv, open(json_file, "w") as f_json:
         csv_writer = csv.DictWriter(
             f_csv,
-            fieldnames=[
-                "ip",
-                "http_code",
-                "http_latency_ms",
-                "https_code",
-                "https_latency_ms",
-            ],
+            fieldnames=["ip", "ports", "server", "powered_by"],
         )
         csv_writer.writeheader()
 
@@ -150,13 +146,7 @@ def main():
                 entry = scan_ip(str(ip), USER_AGENTS)
 
                 if entry:
-                    csv_writer.writerow({
-                        "ip": entry["ip"],
-                        "http_code": (entry.get("http") or {}).get("code", ""),
-                        "http_latency_ms": (entry.get("http") or {}).get("latency_ms", ""),
-                        "https_code": (entry.get("https") or {}).get("code", ""),
-                        "https_latency_ms": (entry.get("https") or {}).get("latency_ms", ""),
-                    })
+                    csv_writer.writerow(entry)
 
                     if not first:
                         f_json.write(",\n")
