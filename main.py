@@ -97,6 +97,7 @@ def scan_ip(ip, agents=None):
     url_http = f"http://{ip}"
     code, latency, resp_headers = check_url(url_http, headers)
     if isinstance(code, int):
+        resp_headers = dict(resp_headers)
         print(f"[+] HTTP ответ от {ip}: {code} ({latency}ms)")
         ports.append(80)
         http_info = {
@@ -115,6 +116,7 @@ def scan_ip(ip, agents=None):
     url_https = f"https://{ip}"
     code, latency, resp_headers = check_url(url_https, headers)
     if isinstance(code, int):
+        resp_headers = dict(resp_headers)
         print(f"[+] HTTPS ответ от {ip}: {code} ({latency}ms)")
         ports.append(443)
         https_info = {
