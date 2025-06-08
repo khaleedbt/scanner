@@ -38,6 +38,8 @@ python main.py
 ```
 
 Results will be saved in the `results/` directory as CSV and JSON files.
+Output filenames now include the full scan range so each run writes to
+distinct files.
 
 ### Captured headers
 
