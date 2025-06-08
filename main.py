@@ -188,7 +188,7 @@ def main():
                     # Формируем запись для CSV, совместимую с обоими форматами
                     csv_entry = {
                         "ip": entry["ip"],
-                        "ports": ",".join(map(str, entry.get("ports", [])) if entry.get("ports") else "",
+                        "ports": ",".join(map(str, entry.get("ports", []))) if entry.get("ports") else "",
                         "server": entry.get("server", ""),
                         "powered_by": entry.get("powered_by", ""),
                         "http_code": (entry.get("http") or {}).get("code", ""),
