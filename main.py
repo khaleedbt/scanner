@@ -85,9 +85,9 @@ def run_scan_for_range(scan_range: str, country: str):
     # Iterate over either CIDR or explicit start/end IPs
     ip_iter = parse_scan_range(scan_range)
 
-    # Base name uses the starting IP of the range
-    ip_base = scan_range.split()[0].split("/")[0].replace(".", "_")
-    filename_id = f"{ip_base}_{country}"
+    # Use the full range string to build a unique identifier
+    range_id = scan_range.strip().replace("/", "_").replace(" ", "_")
+    filename_id = f"{range_id}_{country}"
     output_dir = "results"
     os.makedirs(output_dir, exist_ok=True)
     csv_file = os.path.join(output_dir, f"{filename_id}.csv")
