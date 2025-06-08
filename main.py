@@ -79,75 +79,9 @@ def parse_scan_range(range_str):
         start_ip, end_ip = end_ip, start_ip
     return (ip_address(ip) for ip in range(int(start_ip), int(end_ip) + 1))
 
-def scan_ip(ip, agents=None):
-    """Return combined HTTP/HTTPS results with headers and error info."""
-    if agents is None:
-        agents = USER_AGENTS
 
-    headers = {"User-Agent": random.choice(agents)}
-    http_info = None
-    https_info = None
-    http_error = None
-    https_error = None
-    ports = []
-    server_header = None
-    powered_by_header = None
-
-    # Проверка HTTP
-    url_http = f"http://{ip}"
-    code, latency, resp_headers = check_url(url_http, headers)
-    if isinstance(code, int):
-        resp_headers = dict(resp_headers)
-        print(f"[+] HTTP ответ от {ip}: {code} ({latency}ms)")
-        ports.append(80)
-        http_info = {
-            "port": 80,
-            "code": code,
-            "latency_ms": latency,
-            "headers": resp_headers
-        }
-        server_header = resp_headers.get("Server")
-        powered_by_header = resp_headers.get("X-Powered-By")
-    elif code:
-        print(f"[!] HTTP ошибка для {ip}: {code}")
-        http_error = code
-
-    # Проверка HTTPS
-    url_https = f"https://{ip}"
-    code, latency, resp_headers = check_url(url_https, headers)
-    if isinstance(code, int):
-        resp_headers = dict(resp_headers)
-        print(f"[+] HTTPS ответ от {ip}: {code} ({latency}ms)")
-        ports.append(443)
-        https_info = {
-            "port": 443,
-            "code": code,
-            "latency_ms": latency,
-            "headers": resp_headers
-        }
-        server_header = server_header or resp_headers.get("Server")
-        powered_by_header = powered_by_header or resp_headers.get("X-Powered-By")
-    elif code:
-        print(f"[!] HTTPS ошибка для {ip}: {code}")
-        https_error = code
-
-    if ports:
-        return {
-            "ip": ip,
-            "ports": ports,
-            "server": server_header,
-            "powered_by": powered_by_header,
-            "http": http_info,
-            "https": https_info,
-            "http_error": http_error,
-            "https_error": https_error,
-        }
-    return None
-def main():
-    config = load_settings()
-    scan_range = config["range"]["scan_range"]
-    country = config["range"].get("country_code", "XX").upper()
-
+def run_scan_for_range(scan_range: str, country: str):
+    """Scan a single range and write CSV/JSON results."""
     # Iterate over either CIDR or explicit start/end IPs
     ip_iter = parse_scan_range(scan_range)
 
@@ -215,6 +149,82 @@ def main():
 
     print(f"[✓] CSV сохранён в {csv_file}")
     print(f"[✓] JSON сохранён в {json_file}")
+
+def scan_ip(ip, agents=None):
+    """Return combined HTTP/HTTPS results with headers and error info."""
+    if agents is None:
+        agents = USER_AGENTS
+
+    headers = {"User-Agent": random.choice(agents)}
+    http_info = None
+    https_info = None
+    http_error = None
+    https_error = None
+    ports = []
+    server_header = None
+    powered_by_header = None
+
+    # Проверка HTTP
+    url_http = f"http://{ip}"
+    code, latency, resp_headers = check_url(url_http, headers)
+    if isinstance(code, int):
+        resp_headers = dict(resp_headers)
+        print(f"[+] HTTP ответ от {ip}: {code} ({latency}ms)")
+        ports.append(80)
+        http_info = {
+            "port": 80,
+            "code": code,
+            "latency_ms": latency,
+            "headers": resp_headers
+        }
+        server_header = resp_headers.get("Server")
+        powered_by_header = resp_headers.get("X-Powered-By")
+    elif code:
+        print(f"[!] HTTP ошибка для {ip}: {code}")
+        http_error = code
+
+    # Проверка HTTPS
+    url_https = f"https://{ip}"
+    code, latency, resp_headers = check_url(url_https, headers)
+    if isinstance(code, int):
+        resp_headers = dict(resp_headers)
+        print(f"[+] HTTPS ответ от {ip}: {code} ({latency}ms)")
+        ports.append(443)
+        https_info = {
+            "port": 443,
+            "code": code,
+            "latency_ms": latency,
+            "headers": resp_headers
+        }
+        server_header = server_header or resp_headers.get("Server")
+        powered_by_header = powered_by_header or resp_headers.get("X-Powered-By")
+    elif code:
+        print(f"[!] HTTPS ошибка для {ip}: {code}")
+        https_error = code
+
+    if ports:
+        return {
+            "ip": ip,
+            "ports": ports,
+            "server": server_header,
+            "powered_by": powered_by_header,
+            "http": http_info,
+            "https": https_info,
+            "http_error": http_error,
+            "https_error": https_error,
+        }
+    return None
+def main():
+    config = load_settings()
+    country = config["range"].get("country_code", "XX").upper()
+
+    ranges = config["range"].get("scan_ranges")
+    if not ranges:
+        single = config["range"].get("scan_range")
+        ranges = [single] if single else []
+
+    for scan_range in ranges:
+        run_scan_for_range(scan_range, country)
 
 if __name__ == "__main__":
     main()

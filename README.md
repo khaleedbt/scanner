@@ -10,16 +10,25 @@
    ```
 2. Copy `settings.example.yaml` to `settings.yaml` and adjust the values to your environment.
 
-### scan_range examples
+### scan_ranges examples
 - CIDR notation:
   ```yaml
   range:
-    scan_range: 2.16.37.0/24
+    scan_ranges:
+      - 2.16.37.0/24
   ```
 - Start/End pair:
   ```yaml
   range:
-    scan_range: "2.16.37.0 2.16.37.255"
+    scan_ranges:
+      - "2.16.37.0 2.16.37.255"
+  ```
+- Multiple ranges:
+  ```yaml
+  range:
+    scan_ranges:
+      - 2.16.37.0/24
+      - "2.16.37.0 2.16.37.255"
   ```
 
 ## Usage
